@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -31,7 +32,9 @@ outer:
 				total := innerNum + num
 
 				if total == NUM_TO_GET {
-					fmt.Printf("the answer is %d \n", num*innerNum)
+					multiplied := innerNum * num
+					fmt.Printf("the answer is %d \n", multiplied)
+					ioutil.WriteFile("answer.txt", []byte(strconv.Itoa(multiplied)), 0644)
 					break outer
 				}
 			}
