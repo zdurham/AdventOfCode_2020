@@ -1,73 +1,44 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
+	"io/ioutil"
+	"regexp"
 	"strings"
 )
 
-/*
-
-required!
-   byr (Birth Year)
-   iyr (Issue Year)
-   eyr (Expiration Year)
-   hgt (Height)
-   hcl (Hair Color)
-   ecl (Eye Color)
-   pid (Passport ID)
-   cid (Country ID)
-*/
-
-var requiredKeys = [7]string{"byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"}
-
-func isValid(passport map[string]string) bool {
-	valid := true
-	for _, key := range requiredKeys {
-		if passport[key] == "" {
-			valid = false
-			break
-		}
-	}
-	return valid
+var validators = []*regexp.Regexp{
+	regexp.MustCompile(`(byr):(?:(19[2-9]\d|200[0-2])(?:\s|$))?`),
+	regexp.MustCompile(`(iyr):(?:(201\d|2020)(?:\s|$))?`),
+	regexp.MustCompile(`(eyr):(?:(202\d|2030)(?:\s|$))?`),
+	regexp.MustCompile(`(hgt):(?:((?:1[5-8]\d|19[0-3])cm|(?:59|6\d|7[0-6])in)(?:\s|$))?`),
+	regexp.MustCompile(`(hcl):(?:(#[\da-f]{6})(?:\s|$))?`),
+	regexp.MustCompile(`(ecl):(?:(amb|blu|brn|gry|grn|hzl|oth)(?:\s|$))?`),
+	regexp.MustCompile(`(pid):(?:(\d{9})(?:\s|$))?`),
 }
 
 func main() {
-	file, err := os.Open("input.txt")
-	if err != nil {
-		log.Fatal("oh no")
-	}
+	file, _ := ioutil.ReadFile("input.txt")
+	partOneValid, partTwoValid := 0, 0
 
-	scanner := bufio.NewScanner(file)
+	for _, passport := range strings.Split(strings.TrimSpace(string(file)), "\n\n") {
+		// track validity using ints, if invalid make it 0, so nothing added to above sums
+		validOne, validTwo := 1, 1
 
-	var passports []map[string]string
+		for _, reg := range validators {
+			match := reg.FindStringSubmatch(passport)
 
-	inc := 1
-	for scanner.Scan() {
-		line := scanner.Text()
-		if len(line) != 0 {
-			keyValPairs := strings.Split(line, " ")
-			if len(passports) < inc {
-				passports = append(passports, map[string]string{})
+			if len(match) == 0 {
+				// no match, both invalid cause they are missing out
+				validOne, validTwo = 0, 0
+			} else if match[2] == "" {
+				validTwo = 0
+			} else {
+				fmt.Println(match)
 			}
-			for _, pair := range keyValPairs {
-				splitPair := strings.Split(pair, ":")
-				key, value := splitPair[0], splitPair[1]
-
-				passports[inc-1][key] = value
-			}
-		} else {
-			inc++
 		}
+		partOneValid, partTwoValid = partOneValid+validOne, partTwoValid+validTwo
 	}
 
-	var numValid int
-	for _, passport := range passports {
-		if isValid(passport) {
-			numValid++
-		}
-	}
-	fmt.Printf("There are %d valid passports\n", numValid)
+	fmt.Printf("There are %d valid passports by part 1.\nThere are %d valid passports by part 2 standards", partOneValid, partTwoValid)
 }
